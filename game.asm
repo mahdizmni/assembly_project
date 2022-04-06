@@ -226,7 +226,7 @@ sw  $t5, 0($t0)
 addi   $t0, $t0, -128
 sw  $t5, 0($t0)
 addi   $t0, $t0, -128
-sw  $t5, 0($t0)
+# sw  $t5, 0($t0)
 addi   $t0, $t0, 4
 sw  $t5, 0($t0)
 addi   $t0, $t0, 4
@@ -282,6 +282,9 @@ sw  $t5, 0($t0)
 addi	$t0, $t0, -248
 
 sw  $t5, 0($t0)			# may vanish randomly 
+addi	$t0, $t0, -248
+
+sw  $t5, 128($t0)
 
 # vanishing platform with random generator
 
@@ -322,20 +325,36 @@ sw  $t5, 0($t0)
 addi	$t0, $t0, -8
 sw  $t5, 0($t0)
 
-# draw the charactar
-
-
+# draw the health board
+li  $t0, BASE_ADDRESS	# restart to base address
+li    $t5, 0xFFC0CB		# pink colour
+addi	$t0, $t0, 208
+	# draw 3 lifes (mushrooms)
+sw  $t5, 0($t0)
+sw  $t5, 4($t0)
+sw  $t5, 8($t0)
+sw  $t5, 132($t0)
+addi	$t0, $t0, 16
+sw  $t5, 0($t0)
+sw  $t5, 4($t0)
+sw  $t5, 8($t0)
+sw  $t5, 132($t0)
+addi	$t0, $t0, 16
+sw  $t5, 0($t0)
+sw  $t5, 4($t0)
+sw  $t5, 8($t0)
+sw  $t5, 132($t0)
+addi $s1, $t0, 4		# last health core pointer $s1
 # temp keys  $t8, $t2
 
 li  $t0, BASE_ADDRESS	# restart to base address
 addi  $t0, $t0,   1672     # player (core) position initially (2, 13)	$t0
-addi  $t1, $t0, 120	# pickup position (1, 31)			$t1
+addi  $t1, $t0, 116	# pickup position (1, 31)			$t1
 li  $t0, BASE_ADDRESS	# restart to base address
-addi	$t6, $t0, 2460 	# (7, 19)	shooter position
+addi	$t6, $t0, 3544 	# (21, 27)	shooter position
 addi	$t7,	$t6, 0		# copy of $t6 
-li $t5, 0x800909	# red colour
+li $t5, 0xC9D0D2	# red colour
 sw  $t5, 0($t6)		# draw shooter
-
 
 
 # game  main loop
@@ -343,43 +362,49 @@ main_loop:
 	# while the player have not touched pick up (t0 + 4 != t1)
 	addi	$t2, $t0, 4		# temporay
 	beq	$t2, $t1, EXIT_LOOP
+	j enemy_motion
 	
 	# floating platform move
 	
+	resume_handler:
+	# move the shooters 2 units up
+	# clear the previous pic
+		li   $t5, 0x000000
+		sw   $t5, 0($t7)
+	# update pointer
+	addi	$t7, $t7, -256
+	# draw
+		li $t5, 0xC9D0D2	# smoke colour
+		sw  $t5, 0($t7)
+	j delay
 	
-	
-	# enemy shoot motion
-		# if facing the platform, restart
-		addi	$t2, $t7, 4
-		lw	$t2, 0($t2)
-		li $t5, 0xA0522D		# brown colour
-		bne	$t5, $t2, shooter
+enemy_motion:	# enemy shoot motion
+		# restart state   (22, 16)
+		li  $t2, BASE_ADDRESS	# restart to base address
+		addi	$t2, $t2, 2136
+		bne	$t7, $t2, shooter
 		# clear the previous pic
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
 		addi	$t7, $t6, 0		# reset to initial location
-		j test
+		j collision_check
 	shooter:
 		# clear the previous pic
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
 		# update shooter location
-		addi 	$t7, $t7, 4
+		addi 	$t7, $t7, -128
 		# draw shooter
-		li $t5, 0x800909	# red colour
+		li $t5, 0xC9D0D2	# smoke colour
 		sw  $t5, 0($t7)
+		
+	
 	
 	# check for collisoin of player and shooter
 
 	# 4 cases
-	test:	# if shooter is on the right
-		li	$t2, 8
-		add	$t2, $t2, $t0		# C -- <-->
-		beq	$t2, $t7, collision_w_shooter
-		# if shooter is on the left
-		li	$t2, -8
-		add	$t2, $t2, $t0		
-		beq	$t2, $t7, collision_w_shooter
+	collision_check:	# if shooter is on the right
+		
 		# if shooter is on the bottom right
 		li	$t2, 132
 		add	$t2, $t2, $t0		
@@ -388,9 +413,13 @@ main_loop:
 		li	$t2, 124
 		add	$t2, $t2, $t0		
 		beq	$t2, $t7, collision_w_shooter
+		# if shooter is at the bottom
+		li	$t2, 256
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
 		
 	
-	# syscall delay
+delay:	# syscall delay
 	li $v0, 32
 	li $a0, TDELAY # Wait 1 second 
 	syscall
@@ -435,7 +464,7 @@ main_loop:
 				# add bottom element
 				sw   $t5, 128($t0)
 				
-				j main_loop
+				j Gravity
 					
 			respond_to_e:	# move up right
 				# clear all
@@ -507,7 +536,7 @@ main_loop:
 				# add bottom element
 				sw   $t5, 128($t0)
 				
-				j main_loop	
+				j Gravity	
 				
 			respond_to_w:
 				# move up 2 units
@@ -563,15 +592,9 @@ main_loop:
 			sw   $t5, -4($t0)
 			# add bottom element
 			sw   $t5, 128($t0)
-				# 4 cases
-		# if shooter is on the right
-	test2:	li	$t2, 8
-		add	$t2, $t2, $t0		# C -- <-->
-		beq	$t2, $t7, collision_w_shooter
-		# if shooter is on the left
-		li	$t2, -8
-		add	$t2, $t2, $t0		
-		beq	$t2, $t7, collision_w_shooter
+				
+		
+	collision_check2:	
 		# if shooter is on the bottom right
 		li	$t2, 132
 		add	$t2, $t2, $t0		
@@ -580,13 +603,18 @@ main_loop:
 		li	$t2, 124
 		add	$t2, $t2, $t0		
 		beq	$t2, $t7, collision_w_shooter
+		# if shooter is at the bottom
+		li	$t2, 256
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		
+		
 			
-			# enemy shoot motion
-		# if facing the platform, restart
-		addi	$t2, $t7, 4
-		lw	$t2, 0($t2)
-		li $t5, 0xA0522D		# brown colour
-		bne	$t5, $t2, shooter2
+		# enemy shoot motion
+		# restart state   (22, 16)
+		li  $t2, BASE_ADDRESS	# restart to base address
+		addi	$t2, $t2, 2136
+		bne	$t7, $t2, shooter2
 		# clear the previous pic
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
@@ -597,9 +625,9 @@ main_loop:
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
 		# update shooter location
-		addi 	$t7, $t7, 4
+		addi 	$t7, $t7, -128
 		# draw shooter
-		li $t5, 0x800909	# red colour
+		li $t5, 0xC9D0D2	# smoke colour
 		sw  $t5, 0($t7)
 		
 	
@@ -610,8 +638,42 @@ main_loop:
 	j main_loop
 	
 collision_w_shooter:
+# change colour of player to red for a sec
+li $t5, 0xff0000	# red
+sw $t5, 0($t0)
+sw $t5, 4($t0)
+sw $t5, -4($t0)
+sw $t5, 128($t0)
+# syscall delay
+	li $v0, 32
+	li $a0, 2000 # Wait 2 seconds
+	syscall
+# redraw the mushroom
+li    $t5, 0xA89C90		# mushroom colour
+sw $t5, 0($t0)
+sw $t5, 4($t0)
+sw $t5, -4($t0)
+sw $t5, 128($t0)
 # reduce health
+#	clean the life
+li    $t5, 0x000000		# black colour
+sw	$t5, 0($s1)
+sw	$t5, 4($s1)
+sw	$t5, -4($s1)
+sw	$t5, 128($s1)
+# update pointer
+addi	$s1, $s1, -16
+#	check if still has life
+li    $t5, 0xFFC0CB		# pink colour
+lw    $t2, 0($s1)
+beq   $t2, $t5, resume
+#		if yes, resume
+#		else, stop the game / you lost
+j EXIT_LOOP
+
 # resume the game
+resume:
+j resume_handler
 	
 	
 health_score:
@@ -619,9 +681,29 @@ health_score:
 
 
 EXIT_LOOP:
+# give time to reset 3 seconds
+# syscall delay
+	li $v0, 32
+	li $a0, 3000 # Wait 3 seconds
+	syscall
+	# check if key pressed
+	
+		li $t2, 0xffff0000		# key press will be there
+		lw $t8, 0($t2)			# 1, if key has pressed
+		beq $t8, 1, keypress_happened2
+		j EXIT	# * will get replaced to label after keyboard
+		
+		keypress_happened2:
+			lw $t2, 4($t2) # the next word in memory stores the key that were pressed 
+			beq $t2, 0x70, respond_to_reset # ASCII code of 'p' 
 
-# Keyboard stuff
-
+			j main_loop			# * will get replaced to label after keyboard
+			
+			respond_to_reset:
+				j	main	
+	
+	
+	
 EXIT: 
 
 	li $v0, 10
