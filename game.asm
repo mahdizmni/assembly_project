@@ -256,6 +256,7 @@ addi	$t0, $t0, 4
 sw  $t5, 0($t0)
 addi	$t0, $t0, 4
 sw  $t5, 0($t0)
+addi	$s0,  $t0, 0		# location of the last piece
 
 # draw floating platform 2 
 
@@ -323,16 +324,6 @@ sw  $t5, 0($t0)
 
 # draw the charactar
 
-li  $t0, BASE_ADDRESS	# restart to base address
-li    $t5, 0xA89C90		# mushroom colour
-addi	$t0, $t0, 1800   # (1, 14)
-sw	$t5, 0($t0)
-addi	$t0, $t0, -124   # (0, 13)
-sw	$t5, 0($t0)
-addi	$t0, $t0, -4
-sw	$t5, 0($t0)
-addi	$t0, $t0, -4
-sw	$t5, 0($t0)
 
 # temp keys  $t8, $t2
 
@@ -340,10 +331,11 @@ li  $t0, BASE_ADDRESS	# restart to base address
 addi  $t0, $t0,   1672     # player (core) position initially (2, 13)	$t0
 addi  $t1, $t0, 120	# pickup position (1, 31)			$t1
 li  $t0, BASE_ADDRESS	# restart to base address
-addi	$t6, $t0, 2204 	# (7, 17)	shooter position
+addi	$t6, $t0, 2460 	# (7, 19)	shooter position
 addi	$t7,	$t6, 0		# copy of $t6 
 li $t5, 0x800909	# red colour
 sw  $t5, 0($t6)		# draw shooter
+
 
 
 # game  main loop
@@ -351,6 +343,10 @@ main_loop:
 	# while the player have not touched pick up (t0 + 4 != t1)
 	addi	$t2, $t0, 4		# temporay
 	beq	$t2, $t1, EXIT_LOOP
+	
+	# floating platform move
+	
+	
 	
 	# enemy shoot motion
 		# if facing the platform, restart
@@ -362,6 +358,7 @@ main_loop:
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
 		addi	$t7, $t6, 0		# reset to initial location
+		j test
 	shooter:
 		# clear the previous pic
 		li   $t5, 0x000000
@@ -372,7 +369,26 @@ main_loop:
 		li $t5, 0x800909	# red colour
 		sw  $t5, 0($t7)
 	
-	
+	# check for collisoin of player and shooter
+
+	# 4 cases
+	test:	# if shooter is on the right
+		li	$t2, 8
+		add	$t2, $t2, $t0		# C -- <-->
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the left
+		li	$t2, -8
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the bottom right
+		li	$t2, 132
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the bottom left
+		li	$t2, 124
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		
 	
 	# syscall delay
 	li $v0, 32
@@ -419,7 +435,7 @@ main_loop:
 				# add bottom element
 				sw   $t5, 128($t0)
 				
-				j Gravity
+				j main_loop
 					
 			respond_to_e:	# move up right
 				# clear all
@@ -491,7 +507,7 @@ main_loop:
 				# add bottom element
 				sw   $t5, 128($t0)
 				
-				j Gravity	
+				j main_loop	
 				
 			respond_to_w:
 				# move up 2 units
@@ -547,6 +563,23 @@ main_loop:
 			sw   $t5, -4($t0)
 			# add bottom element
 			sw   $t5, 128($t0)
+				# 4 cases
+		# if shooter is on the right
+	test2:	li	$t2, 8
+		add	$t2, $t2, $t0		# C -- <-->
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the left
+		li	$t2, -8
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the bottom right
+		li	$t2, 132
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
+		# if shooter is on the bottom left
+		li	$t2, 124
+		add	$t2, $t2, $t0		
+		beq	$t2, $t7, collision_w_shooter
 			
 			# enemy shoot motion
 		# if facing the platform, restart
@@ -558,6 +591,7 @@ main_loop:
 		li   $t5, 0x000000
 		sw   $t5, 0($t7)
 		addi	$t7, $t6, 0		# reset to initial location
+		j Gravity
 	shooter2:
 		# clear the previous pic
 		li   $t5, 0x000000
@@ -567,9 +601,22 @@ main_loop:
 		# draw shooter
 		li $t5, 0x800909	# red colour
 		sw  $t5, 0($t7)
+		
+	
+		
+		
 		j Gravity
 			
 	j main_loop
+	
+collision_w_shooter:
+# reduce health
+# resume the game
+	
+	
+health_score:
+# give some second to restart
+
 
 EXIT_LOOP:
 
