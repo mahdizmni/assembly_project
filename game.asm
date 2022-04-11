@@ -3,25 +3,25 @@
 # CSCB58 Winter 2022 Assembly Final Project
 # University of Toronto, Scarborough
 #
-# Student: Name, Student Number, UTorID, official email
+# Student: Mahdi Zamani, 1006709714, zamanim6, mahdi.zamani@mail.utoronto.ca
 #
 # Bitmap Display Configuration:
-# - Unit width in pixels: 4 (update this as needed)
-# - Unit height in pixels: 4 (update this as needed)
+# - Unit width in pixels: 8 (update this as needed)
+# - Unit height in pixels: 8 (update this as needed)
 # - Display width in pixels: 256 (update this as needed)
 # - Display height in pixels: 256 (update this as needed)
 # - Base Address for Display: 0x10008000 ($gp)
 #
 # Which milestones have been reached in this submission?
 # (See the assignment handout for descriptions of the milestones)
-# - Milestone 1/2/3 (choose the one the applies)
+# - Milestone 2 & 3 (choose the one the applies)
 #
 # Which approved features have been implemented for milestone 3?
 # (See the assignment handout for the list of additional features)
-# 1. (fill in the feature, if any)
-# 2. (fill in the feature, if any)
-# 3. (fill in the feature, if any)
-# ... (add more if necessary)
+# 1. moving objects
+# 2. fail condition
+# 3. win condition
+# 4. health bar
 #
 # Link to video demonstration for final submission:
 # - (insert YouTube / MyMedia / other URL here). Make sure we can view it!
@@ -243,25 +243,13 @@ addi   $t0, $t0, -128
 sw  $t5, 0($t0)
 
 
-# draw floating platform starting
-li $t5, 0xA0522D		# brown colour
-li  $t0, BASE_ADDRESS	# restart to base address
-addi	$t0, $t0, 1984 	# (16, 15)
-sw  $t5, 0($t0)
-addi	$t0, $t0, 4
-sw  $t5, 0($t0)
-addi	$t0, $t0, 4
-sw  $t5, 0($t0)
-addi	$t0, $t0, 4
-sw  $t5, 0($t0)
-addi	$t0, $t0, 4
-sw  $t5, 0($t0)
-addi	$s0,  $t0, 0		# location of the last piece
 
 # draw floating platform 2 
-
+li $t5, 0xA0522D		# brown colour
 li  $t0, BASE_ADDRESS	# restart to base address
 addi	$t0, $t0, 3636 	# (13, 28)
+sw  $t5, -20($t0)
+addi	$s0, $t0, -20
 sw  $t5, 0($t0)
 sw  $t5, 4($t0)
 sw  $t5, 8($t0)
@@ -273,8 +261,10 @@ sw  $t5, -256($t0)
 addi	$t0, $t0, -256
 addi	$t0, $t0, -248
 sw  $t5, 0($t0)
+
 addi	$t0, $t0, -248
 sw  $t5, 0($t0)
+
 addi	$t0, $t0, -248
 sw  $t5, -264($t0)		# may show up randomly
 sw  $t5, 0($t0)
@@ -285,6 +275,7 @@ sw  $t5, 0($t0)			# may vanish randomly
 addi	$t0, $t0, -248
 
 sw  $t5, 128($t0)
+
 
 # vanishing platform with random generator
 
@@ -355,13 +346,13 @@ addi	$t6, $t0, 3544 	# (21, 27)	shooter position
 addi	$t7,	$t6, 0		# copy of $t6 
 li $t5, 0xC9D0D2	# red colour
 sw  $t5, 0($t6)		# draw shooter
-
+addi	$s5, $s0, 0	# copy of $s0 aka loc of floating platform
 
 # game  main loop
 main_loop:
 	# while the player have not touched pick up (t0 + 4 != t1)
 	addi	$t2, $t0, 4		# temporay
-	beq	$t2, $t1, EXIT_LOOP
+	beq	$t2, $t1, Win
 	j enemy_motion
 	
 	# floating platform move
@@ -398,7 +389,7 @@ enemy_motion:	# enemy shoot motion
 		li $t5, 0xC9D0D2	# smoke colour
 		sw  $t5, 0($t7)
 		
-	
+
 	
 	# check for collisoin of player and shooter
 
@@ -440,7 +431,7 @@ delay:	# syscall delay
 			beq $t2, 0x71, respond_to_q # ASCII code of 'q' 
 			beq $t2, 0x70, respond_to_p # ASCII code of 'p' 
 
-			j main_loop			# * will get replaced to label after keyboard
+			j Gravity			# * will get replaced to label after keyboard
 			
 			respond_to_p:
 				j	main
@@ -574,6 +565,10 @@ delay:	# syscall delay
 			li $a0, 100 # Wait 1 second 
 			syscall
 			
+			
+			
+			
+			
 			# move down
 			# clear top row
 			# clear the left element
@@ -592,7 +587,20 @@ delay:	# syscall delay
 			sw   $t5, -4($t0)
 			# add bottom element
 			sw   $t5, 128($t0)
+			
 				
+			li $t2, 0xffff0000		# key press will be there
+			lw $t8, 0($t2)			# 1, if key has pressed
+			beq $t8, 1, keypress_happened4
+			j collision_check2	# * will get replaced to label after keyboard
+			
+		keypress_happened4:
+			lw $t2, 4($t2) # the next word in memory stores the key that were pressed 
+			beq $t2, 0x70, respond_to_reset # ASCII code of 'p' 
+
+						# * will get replaced to label after keyboard
+				
+							
 		
 	collision_check2:	
 		# if shooter is on the bottom right
@@ -608,11 +616,7 @@ delay:	# syscall delay
 		add	$t2, $t2, $t0		
 		beq	$t2, $t7, collision_w_shooter
 		
-		
-			
-		# enemy shoot motion
-		# restart state   (22, 16)
-		li  $t2, BASE_ADDRESS	# restart to base address
+		 li  $t2, BASE_ADDRESS	# restart to base address
 		addi	$t2, $t2, 2136
 		bne	$t7, $t2, shooter2
 		# clear the previous pic
@@ -669,40 +673,138 @@ lw    $t2, 0($s1)
 beq   $t2, $t5, resume
 #		if yes, resume
 #		else, stop the game / you lost
-j EXIT_LOOP
 
+# game over screen
+
+Game_over:
+# draw L
+li  $t2, BASE_ADDRESS	# restart to base address
+addi $t2, $t2, 672      # (4, 4)
+li $t5, 0xff0000	# red
+sw $t5, 0($t2)
+sw $t5, 128($t2)
+sw $t5, 256($t2)
+sw $t5, 384($t2)
+sw $t5, 512($t2)
+sw $t5, 516($t2)
+sw $t5, 520($t2)
+addi $t2, $t2, 16      # O
+sw $t5, 0($t2)
+sw $t5, 128($t2)
+sw $t5, 256($t2)
+sw $t5, 384($t2)
+sw $t5, 512($t2)
+sw $t5, 516($t2)
+sw $t5, 520($t2)
+sw $t5, 4($t2)
+sw $t5, 8($t2)
+sw $t5, 136($t2)
+sw $t5, 264($t2)
+sw $t5, 392($t2)
+addi $t2, $t2, 16    # S
+sw $t5, 0($t2)
+sw $t5, 4($t2)
+sw $t5, 8($t2)
+sw $t5, 128($t2)
+sw $t5, 256($t2)
+sw $t5, 260($t2)
+sw $t5, 264($t2)
+sw $t5, 392($t2)
+sw $t5, 520($t2)
+sw $t5, 512($t2)
+sw $t5, 516($t2)
+addi $t2, $t2, 16    # T
+sw $t5, 0($t2)
+sw $t5, 4($t2)
+sw $t5, 8($t2)
+sw $t5, 12($t2)
+sw $t5, 16($t2)
+sw $t5, 136($t2)
+sw $t5, 264($t2)
+sw $t5, 392($t2)
+sw $t5, 520($t2)
+
+
+j EXIT_LOOP
 # resume the game
 resume:
 j resume_handler
 	
-	
-health_score:
-# give some second to restart
-
-
-EXIT_LOOP:
-# give time to reset 3 seconds
+# win
+Win: 
+# draw golden T
+li  $t2, BASE_ADDRESS	# restart to base address
+addi $t2, $t2, 572      # (15, 5)
+li $t5, 0xffcc00	# Gold
+sw $t5, 0($t2)
+sw $t5, 4($t2)
+sw $t5, 8($t2)
+sw $t5, -4($t2)
+sw $t5, -8($t2)
+sw $t5, 128($t2)
+sw $t5, 256($t2)
+sw $t5, 384($t2)
+sw $t5, 512($t2)
 # syscall delay
-	li $v0, 32
-	li $a0, 3000 # Wait 3 seconds
+li $v0, 32
+	li $a0, TDELAY # Wait 1 second 
 	syscall
+li  $t2, BASE_ADDRESS	# restart to base address
+addi $t2, $t2, 572      # (15, 5)
+li $t5, 0x990099	# purple
+sw $t5, 0($t2)
+sw $t5, 4($t2)
+sw $t5, 8($t2)
+sw $t5, -4($t2)
+sw $t5, -8($t2)
+sw $t5, 128($t2)
+sw $t5, 256($t2)
+sw $t5, 384($t2)
+sw $t5, 512($t2)
+# syscall delay
+li $v0, 32
+	li $a0, TDELAY # Wait 1 second 
+	syscall
+	
+# check if key pressed
+	
+		li $t2, 0xffff0000		# key press will be there
+		lw $t8, 0($t2)			# 1, if key has pressed
+		beq $t8, 1, keypress_happened3
+		j Win	# * will get replaced to label after keyboard
+		
+		keypress_happened3:
+			lw $t2, 4($t2) # the next word in memory stores the key that were pressed 
+			beq $t2, 0x70, respond_to_reset # ASCII code of 'p' 
+
+			j Win			# * will get replaced to label after keyboard
+				
+	
+	j Win
+	
+EXIT_LOOP: 
+
+
+
+
+	
 	# check if key pressed
 	
 		li $t2, 0xffff0000		# key press will be there
 		lw $t8, 0($t2)			# 1, if key has pressed
 		beq $t8, 1, keypress_happened2
-		j EXIT	# * will get replaced to label after keyboard
+		j EXIT_LOOP	# * will get replaced to label after keyboard
 		
 		keypress_happened2:
 			lw $t2, 4($t2) # the next word in memory stores the key that were pressed 
 			beq $t2, 0x70, respond_to_reset # ASCII code of 'p' 
 
-			j main_loop			# * will get replaced to label after keyboard
+			j EXIT_LOOP			# * will get replaced to label after keyboard
 			
 			respond_to_reset:
 				j	main	
 	
-	
+	j EXIT_LOOP	
 	
 EXIT: 
 
