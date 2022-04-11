@@ -24,14 +24,14 @@
 # 4. health bar
 #
 # Link to video demonstration for final submission:
-# - (insert YouTube / MyMedia / other URL here). Make sure we can view it!
+# - (https://youtu.be/dSXghe1i-4I). Make sure we can view it!
 #
 # Are you OK with us sharing the video with people outside course staff?
-# - yes / no / yes, and please share this project github link as well!
-#
+# - no, and please share this project github link as well!
+# project was in a private repo till April 11. 
 # Any additional information that the TA needs to know:
 # - (write here, if any)
-#
+# didn't have time to add more features :(
 #####################################################################
 
 .data
@@ -442,6 +442,10 @@ delay:	# syscall delay
 				addi	$t2, $t0, 8		# temporay
 				lw	$t2, 0($t2)
 				beq	$t2, $t5, main_loop
+				li	$t5, 0x000000		# black
+				addi	$t2, $t0, 260		# temporay
+				lw	$t2, 0($t2)
+				beq	$t2, $t5, main_loop
 				# clear the left element
 				li   $t5, 0x000000
 				sw   $t5, -4($t0)
@@ -458,6 +462,14 @@ delay:	# syscall delay
 				j Gravity
 					
 			respond_to_e:	# move up right
+				li	$t5, 0xA0522D		# brown colour
+				addi	$t2, $t0, -248		# temporay
+				lw	$t2, 0($t2)
+				beq	$t2, $t5, main_loop
+				li	$t5, 0xfff220		# gold colour
+				addi	$t2, $t0, 8		# temporay
+				lw	$t2, 0($t2)
+				beq	$t2, $t5, main_loop
 				# clear all
 				# clear the left element
 				li   $t5, 0x000000
@@ -483,7 +495,10 @@ delay:	# syscall delay
 				j Gravity	
 				
 			respond_to_q:	# move up left
-				
+				li	$t5, 0xA0522D		# brown colour
+				addi	$t2, $t0, -264		# temporay
+				lw	$t2, 0($t2)
+				beq	$t2, $t5, main_loop
 				# clear all
 				# clear the left element
 				li   $t5, 0x000000
@@ -512,6 +527,10 @@ delay:	# syscall delay
 				# if left is platform
 				li	$t5, 0xA0522D		# brown colour
 				addi	$t2, $t0, -8		# temporay
+				lw	$t2, 0($t2)
+				beq	$t2, $t5, main_loop
+				li	$t5, 0x000000		# black
+				addi	$t2, $t0, 252		# temporay
 				lw	$t2, 0($t2)
 				beq	$t2, $t5, main_loop
 				# clear the right element
