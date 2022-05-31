@@ -1,2 +1,2 @@
 # assembly_project
-CSCB58 project
+Stupid game made in a stupid language
